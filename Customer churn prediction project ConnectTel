@@ -1,0 +1,414 @@
+#import packages
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import LabelEncoder
+#Load data set
+data = pd.read_csv(r"C:\Users\presh\Downloads\Customer-Churn.csv")
+#cleaning data set, check for missing values 
+data.isna().sum() #isblank of pandas
+
+# Convert TotalCharges to numeric and handle missing values
+data['TotalCharges'] = pd.to_numeric(data['TotalCharges'], errors='coerce')
+data = data.dropna(subset=['TotalCharges'])
+
+# Ensure numerical columns are correctly converted
+numerical_columns = ['tenure', 'MonthlyCharges', 'TotalCharges']
+for col in numerical_columns:
+    data[col] = pd.to_numeric(data[col], errors='coerce')
+
+# Drop any remaining NaNs
+data.dropna(subset=numerical_columns, inplace=True)
+
+from sklearn.preprocessing import LabelEncoder
+
+categorical_columns = ['gender', 'SeniorCitizen', 'Partner', 'Dependents', 'PhoneService', 'MultipleLines',
+                       'InternetService', 'OnlineSecurity', 'DeviceProtection', 'TechSupport', 'StreamingTV',
+                       'StreamingMovies', 'Contract', 'PaperlessBilling', 'PaymentMethod']
+
+label_encoders = {}
+for column in categorical_columns:
+    le = LabelEncoder()
+    data[column] = le.fit_transform(data[column])
+    label_encoders[column] = le
+    
+    # Create new features
+data['AvgMonthlyCharges'] = data['TotalCharges'] / data['tenure']
+data['CombinedServices'] = data[['OnlineSecurity', 'DeviceProtection', 'TechSupport', 'StreamingTV', 'StreamingMovies']].sum(axis=1)
+
+# Handle potential infinity values created by dividing by zero
+data.replace([np.inf, -np.inf], np.nan, inplace=True)
+data.fillna(0, inplace=True)
+
+    
+# Removing outliers based on Z-score
+from scipy import stats
+
+z_scores = stats.zscore(data[numerical_columns])
+abs_z_scores = abs(z_scores)
+filtered_entries = (abs_z_scores < 3).all(axis=1)
+data = data[filtered_entries]
+
+# Standardize numerical features
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+numerical_columns.extend(['AvgMonthlyCharges', 'CombinedServices'])
+data[numerical_columns] = scaler.fit_transform(data[numerical_columns])
+# Visualize the distribution of Tenure
+sns.histplot(data['tenure'], kde=True)
+plt.title('Distribution of Tenure')
+Text(0.5, 1.0, 'Distribution of Tenure')
+
+# Visualize the relationship between Churn and MonthlyCharges
+sns.boxplot(x='Churn', y='MonthlyCharges', data=data)
+plt.title('Relationship between Churn and MonthlyCharges')
+Text(0.5, 1.0, 'Relationship between Churn and MonthlyCharges')
+
+# Visualizing the distribution of churn
+plt.figure(figsize=(8, 6))
+sns.countplot(x='Churn', data=data, palette='viridis')
+plt.title('Distribution of Churn')
+plt.xlabel('Churn')
+plt.ylabel('Count')
+plt.show()
+
+# Visualizing churn rate by gender
+plt.figure(figsize=(8, 6))
+sns.countplot(x='gender', hue='Churn', data=data, palette='viridis')
+plt.title('Churn Rate by Gender')
+plt.xlabel('Gender')
+plt.ylabel('Count')
+plt.show()
+
+# Visualizing churn rate by SeniorCitizen
+plt.figure(figsize=(8, 6))
+sns.countplot(x='SeniorCitizen', hue='Churn', data=data, palette='viridis')
+plt.title('Churn Rate by Senior Citizen Status')
+plt.xlabel('Senior Citizen')
+plt.ylabel('Count')
+plt.xticks(ticks=[0, 1], labels=['No', 'Yes'])
+plt.show()
+
+# Visualizing churn rate by Partner
+plt.figure(figsize=(8, 6))
+sns.countplot(x='Partner', hue='Churn', data=data, palette='viridis')
+plt.title('Churn Rate by Partner Status')
+plt.xlabel('Partner')
+plt.ylabel('Count')
+plt.show()
+
+# Visualizing churn rate by Dependents
+plt.figure(figsize=(8, 6))
+sns.countplot(x='Dependents', hue='Churn', data=data, palette='viridis')
+plt.title('Churn Rate by Dependents Status')
+plt.xlabel('Dependents')
+plt.ylabel('Count')
+plt.show()
+
+# Visualizing churn rate by PhoneService
+plt.figure(figsize=(8, 6))
+sns.countplot(x='PhoneService', hue='Churn', data=data, palette='viridis')
+plt.title('Churn Rate by Phone Service')
+plt.xlabel('Phone Service')
+plt.ylabel('Count')
+plt.show()
+
+# Convert 'TotalCharges' to numerical values, forcing errors to NaN and then filling them with zeros
+data['TotalCharges'] = pd.to_numeric(data['TotalCharges'], errors='coerce').fillna(0)
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Encode 'Churn' column to numerical values
+data['Churn'] = data['Churn'].apply(lambda x: 1 if x == 'Yes' else 0)
+
+# Select numerical features for correlation analysis
+numerical_features = ['SeniorCitizen', 'tenure', 'MonthlyCharges', 'TotalCharges']
+
+# Calculate the correlation matrix
+corr_matrix = data[numerical_features + ['Churn']].corr()
+
+# Visualize the correlation matrix
+plt.figure(figsize=(10, 8))
+sns.heatmap(corr_matrix, annot=True, cmap='viridis', linewidths=0.5)
+plt.title('Correlation Matrix')
+plt.show()
+
+# List of numerical features
+numerical_features = ['tenure', 'MonthlyCharges', 'TotalCharges']
+
+# List of categorical features
+categorical_features = [
+    'gender', 'SeniorCitizen', 'Partner', 'Dependents', 'PhoneService', 'MultipleLines',
+    'InternetService', 'OnlineSecurity', 'OnlineBackup', 'DeviceProtection', 'TechSupport',
+    'StreamingTV', 'StreamingMovies', 'Contract', 'PaperlessBilling', 'PaymentMethod', 'Churn'
+]
+# Set up the visualisation style
+sns.set(style="whitegrid")
+
+# Univariate analysis: Distribution of categorical variables
+categorical_columns = ['gender', 'SeniorCitizen', 'Partner', 'Dependents', 'PhoneService', 'MultipleLines',
+                       'InternetService', 'OnlineSecurity', 'DeviceProtection', 'TechSupport', 'StreamingTV',
+                       'StreamingMovies', 'Contract', 'PaperlessBilling', 'PaymentMethod', 'Churn']
+
+fig, axes = plt.subplots(nrows=4, ncols=4, figsize=(20, 20))
+for i, col in enumerate(categorical_columns):
+    sns.countplot(data=data, x=col, ax=axes[i // 4, i % 4])
+    axes[i // 4, i % 4].set_title(f'Distribution of {col}')
+    for tick in axes[i // 4, i % 4].get_xticklabels():
+        tick.set_rotation(45)
+
+plt.tight_layout()
+plt.show()
+
+ # Univariate analysis: Distribution of numerical variables together
+# Plot the distribution for Tenure
+plt.figure(figsize=(10, 5))
+sns.histplot(data=data, x='tenure', kde=True)
+plt.title('Distribution of Tenure')
+plt.show()
+
+# Plot the distribution for Monthly Charges
+plt.figure(figsize=(10, 5))
+sns.histplot(data=data, x='MonthlyCharges', kde=True)
+plt.title('Distribution of MonthlyCharges')
+plt.show()
+
+# Plot the distribution for Total Charges using a subsample to handle large data
+subsample = data['TotalCharges'].sample(n=1000, random_state=42)
+plt.figure(figsize=(10, 5))
+sns.histplot(subsample, kde=True)
+plt.title('Distribution of TotalCharges (Subsampled)')
+plt.show()
+
+
+
+#Bivariate Analysis; 
+#Categorical vs Target Variable (Churn) Plot bar charts to see the relationship.
+
+fig, axes = plt.subplots(nrows=6, ncols=3, figsize=(18, 24))
+axes = axes.flatten()
+
+for i, feature in enumerate(categorical_features):
+    
+    sns.countplot(data=df, x=feature, hue='Churn', ax=axes[i])
+    axes[i].set_title(f'{feature} vs Churn')
+    axes[i].set_xlabel('')
+    axes[i].set_ylabel('Count')
+
+plt.tight_layout()
+plt.show()
+
+# Ensure 'TotalCharges' is numeric
+data['TotalCharges'] = pd.to_numeric(data['TotalCharges'], errors='coerce')
+
+# Bivariate analysis: Numerical variables and Churn
+numerical_columns = ['tenure', 'MonthlyCharges', 'TotalCharges']
+
+fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(20, 5))
+for i, col in enumerate(numerical_columns):
+    sns.boxplot(data=data, x='Churn', y=col, ax=axes[i])
+    axes[i].set_title(f'{col} by Churn')
+
+plt.tight_layout()
+plt.show()
+
+# Multivariate Analysis,Correlation Heatmap: 
+# Add the target variable as numerical
+data['Churn_numeric'] = data['Churn'].apply(lambda x: 1 if x == 'Yes' else 0)
+
+# Calculate correlation matrix
+correlation_matrix = data[['tenure', 'MonthlyCharges', 'TotalCharges', 'AvgMonthlyCharges', 'CombinedServices', 'Churn_numeric']].corr()
+
+# Plot the heatmap
+plt.figure(figsize=(12, 10))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+plt.title('Correlation Heatmap')
+plt.show()
+
+# Pair plot to visualize relationships between pairs of numerical features and the target variable
+plot Tenure vs. MonthlyCharges
+plt.figure(figsize=(10, 5))
+sns.scatterplot(data=data, x='tenure', y='MonthlyCharges', hue='Churn', palette='coolwarm')
+plt.title('Tenure vs. MonthlyCharges')
+plt.show()
+
+# Tenure vs. TotalCharges
+plt.figure(figsize=(10, 5))
+sns.scatterplot(data=data, x='tenure', y='TotalCharges', hue='Churn', palette='coolwarm')
+plt.title('Tenure vs. TotalCharges')
+plt.show()
+
+# MonthlyCharges vs. TotalCharges
+plt.figure(figsize=(10, 5))
+sns.scatterplot(data=data, x='MonthlyCharges', y='TotalCharges', hue='Churn', palette='coolwarm')
+plt.title('MonthlyCharges vs. TotalCharges')
+plt.show()
+
+
+
+from sklearn.preprocessing import LabelEncoder
+
+
+# Encode categorical variables
+categorical_columns = ['gender', 'SeniorCitizen', 'Partner', 'Dependents', 'PhoneService', 'MultipleLines',
+                       'InternetService', 'OnlineSecurity', 'DeviceProtection', 'TechSupport', 'StreamingTV',
+                       'StreamingMovies', 'Contract', 'PaperlessBilling', 'PaymentMethod']
+
+label_encoders = {}
+for column in categorical_columns:
+    le = LabelEncoder()
+    data[column] = le.fit_transform(data[column])
+    label_encoders[column] = le
+
+# Create new features
+data['AvgMonthlyCharges'] = data['TotalCharges'] / data['tenure']
+data['CombinedServices'] = data[['OnlineSecurity', 'DeviceProtection', 'TechSupport', 'StreamingTV', 'StreamingMovies']].sum(axis=1)
+
+# Handle potential infinity values created by dividing by zero
+data.replace([np.inf, -np.inf], np.nan, inplace=True)
+data.fillna(0, inplace=True)
+
+# Verify the new features
+print(data[['AvgMonthlyCharges', 'CombinedServices']].head())
+
+# Visualize the distribution of the new features
+
+# Distribution of AvgMonthlyCharges
+plt.figure(figsize=(10, 5))
+sns.histplot(data['AvgMonthlyCharges'], kde=True)
+plt.title('Distribution of AvgMonthlyCharges')
+plt.xlabel('AvgMonthlyCharges')
+plt.ylabel('Frequency')
+plt.show()
+
+# Distribution of CombinedServices
+plt.figure(figsize=(10, 5))
+sns.countplot(x=data['CombinedServices'])
+plt.title('Distribution of CombinedServices')
+plt.xlabel('CombinedServices')
+plt.ylabel('Frequency')
+plt.show()
+
+# Visualize the relationship between the new features and Churn
+
+# AvgMonthlyCharges vs Churn
+plt.figure(figsize=(10, 5))
+sns.boxplot(x='Churn', y='AvgMonthlyCharges', data=data)
+plt.title('AvgMonthlyCharges vs Churn')
+plt.xlabel('Churn')
+plt.ylabel('AvgMonthlyCharges')
+plt.show()
+
+# CombinedServices vs Churn
+plt.figure(figsize=(10, 5))
+sns.boxplot(x='Churn', y='CombinedServices', data=data)
+plt.title('CombinedServices vs Churn')
+plt.xlabel('Churn')
+plt.ylabel('CombinedServices')
+plt.show()
+   AvgMonthlyCharges  CombinedServices
+0           0.776564                 0
+1          -2.701906                 4
+2           0.774220                 2
+3          -0.380981                 6
+4           0.758737                 0
+
+
+
+
+#Model selection, training, and validation 
+#Data Preparation
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# Prepare the data for modeling
+X = data[categorical_columns + numerical_columns]
+y = data['Churn'].apply(lambda x: 1 if x == 'Yes' else 0)
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Standardize numerical features
+scaler = StandardScaler()
+X_train[numerical_columns] = scaler.fit_transform(X_train[numerical_columns])
+X_test[numerical_columns] = scaler.transform(X_test[numerical_columns])
+#Model Training and Testing
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+
+# Initialize models
+models = {
+    'Logistic Regression': LogisticRegression(max_iter=1000),
+    'Random Forest': RandomForestClassifier(n_estimators=100, random_state=42),
+    'Gradient Boosting': GradientBoostingClassifier(n_estimators=100, random_state=42)
+}
+
+# Train and evaluate models
+results = {}
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred)
+    confusion = confusion_matrix(y_test, y_pred)
+    results[name] = {
+        'accuracy': accuracy,
+        'classification_report': report,
+        'confusion_matrix': confusion
+    }
+
+# Display results
+for model_name, metrics in results.items():
+    print(f"{model_name} - Accuracy: {metrics['accuracy']}")
+    print("Classification Report:\n", metrics['classification_report'])
+    print("Confusion Matrix:\n", metrics['confusion_matrix'])
+    print('------------------------------------')
+Logistic Regression - Accuracy: 0.7839374555792467
+Classification Report:
+               precision    recall  f1-score   support
+
+           0       0.83      0.89      0.86      1033
+           1       0.62      0.48      0.54       374
+
+    accuracy                           0.78      1407
+   macro avg       0.72      0.69      0.70      1407
+weighted avg       0.77      0.78      0.77      1407
+
+Confusion Matrix:
+ [[922 111]
+ [193 181]]
+------------------------------------
+Random Forest - Accuracy: 0.7882018479033405
+Classification Report:
+               precision    recall  f1-score   support
+
+           0       0.82      0.90      0.86      1033
+           1       0.64      0.47      0.54       374
+
+    accuracy                           0.79      1407
+   macro avg       0.73      0.69      0.70      1407
+weighted avg       0.78      0.79      0.78      1407
+
+Confusion Matrix:
+ [[933 100]
+ [198 176]]
+------------------------------------
+Gradient Boosting - Accuracy: 0.7953091684434968
+Classification Report:
+               precision    recall  f1-score   support
+
+           0       0.83      0.90      0.87      1033
+           1       0.65      0.50      0.57       374
+
+    accuracy                           0.80      1407
+   macro avg       0.74      0.70      0.72      1407
+weighted avg       0.78      0.80      0.79      1407
+
+Confusion Matrix:
+ [[931 102]
+ [186 188]]
+------------------------------------
